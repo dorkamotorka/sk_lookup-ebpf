@@ -2,7 +2,7 @@
 
 Run HTTP server, e.g. `python3 raw-examples/socket-tests/blocking-accept.py`
 
-Figure out its PID using `lsof -i :8080`. Run eBPF code using `sudo ./inet-lookup-ebpf -pid <PID>`
+Figure out its PID and FD using `lsof -i :8080` and `ss -lpt`. Run eBPF code using `sudo ./inet-lookup-ebpf -pid <PID> -fd <FD>`
 
 Then you can make a request using 
 

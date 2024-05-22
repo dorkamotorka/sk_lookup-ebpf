@@ -6,20 +6,20 @@
 #include <bpf/bpf_helpers.h>
 
 
-// Map of open echo service ports.
+// Map of open service ports that we listen on for requests
 struct bpf_map_def SEC("maps") echo_ports = {
 	.type		= BPF_MAP_TYPE_HASH,
 	.max_entries	= 1024,
 	.key_size	= sizeof(__u32), // port number
-	.value_size	= sizeof(__u64), // socket file descriptor
+	.value_size	= sizeof(__u64), // key for echo_socket
 };
 
-/* Echo server socket */
+// Map of socket to which the listening ports forward traffic (in our case only one)
 struct bpf_map_def SEC("maps") echo_socket = {
 	.type		= BPF_MAP_TYPE_SOCKMAP,
 	.max_entries	= 1,
-	.key_size	= sizeof(__u32),
-	.value_size	= sizeof(__u64),
+	.key_size	= sizeof(__u32), // key for the socket
+	.value_size	= sizeof(__u64), // socket file descriptor
 };
 
 // When invoked BPF sk_lookup program can select a socket that will receive the incoming packet 
@@ -34,18 +34,21 @@ int echo_dispatch(struct bpf_sk_lookup *ctx)
 	__u32 *open;
 	long err;
 
-	/* Is echo service enabled on packets destination port? */
+	// Extract metadata from the request which can then be used to decide 
+	// to which socket we want to forward traffic
 	port = ctx->local_port;
 	open = bpf_map_lookup_elem(&echo_ports, &port);
 	if (!open)
 		return SK_PASS;
 
-	// Get the socket where the echo server is listening
+	// Get the corresponding socket 
+	// In our case we have only one socket in the map, but in general,
+	// we could have multiple sockets and we would need to select the right one
 	sk = bpf_map_lookup_elem(&echo_socket, &zero);
 	if (!sk)
 		return SK_DROP;
 
-	// Select a socket to receive the packet
+	// Assign the received packet/request to the socket
 	err = bpf_sk_assign(ctx, sk, 0);
 	// Release the reference held by sock
 	bpf_sk_release(sk);
