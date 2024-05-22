@@ -4,6 +4,7 @@ import (
 	"os"
 	"log"
 	"time"
+	"flag"
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
 	"github.com/cilium/ebpf/rlimit"
@@ -12,7 +13,17 @@ import (
 
 //go:generate go run github.com/cilium/ebpf/cmd/bpf2go sklookup sk_lookup.c
 
+var targetPid = flag.Int("pid", 0, "Target PID")
+
+func insertEchoPort(key uint32, value uint64, ebpfmap *ebpf.Map) error {
+	if err := ebpfmap.Put(&key, &value); err != nil {
+		return err
+	}
+	return nil
+}
+
 func main() {
+	flag.Parse()
 	// Remove resource limits for kernels <5.11.
 	if err := rlimit.RemoveMemlock(); err != nil { 
 		log.Print("Removing memlock:", err)
@@ -54,9 +65,7 @@ func main() {
 	// Get the file descriptor to a process 
 	// Duplicate socket FD and store the socket to sockmap
 	// Remember that each process has it's own file descriptor table
-	// TODO: sharing file descriptor between processes?
-	targetPid := 123602
-	targetPidFd, err := pidfd.Open(targetPid, 0)
+	targetPidFd, err := pidfd.Open(*targetPid, 0)
 	if err != nil {
 		panic(err)
 	}
@@ -72,6 +81,12 @@ func main() {
 	if err := objs.EchoSocket.Put(&key, &val); err != nil {
 		panic(err)
 	}
+
+	// Now add some random port on which the packets will be redirected to certain socket
+	insertEchoPort(uint32(8081), uint64(0), objs.EchoPorts)
+	insertEchoPort(uint32(8082), uint64(0), objs.EchoPorts)
+	insertEchoPort(uint32(8083), uint64(0), objs.EchoPorts)
+
 
 	log.Printf("Running eBPF program in the current process network namespace...")
 	for {

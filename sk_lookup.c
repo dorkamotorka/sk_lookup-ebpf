@@ -10,8 +10,8 @@
 struct bpf_map_def SEC("maps") echo_ports = {
 	.type		= BPF_MAP_TYPE_HASH,
 	.max_entries	= 1024,
-	.key_size	= sizeof(__u16), // port number
-	.value_size	= sizeof(__u8), // socket file descriptor
+	.key_size	= sizeof(__u32), // port number
+	.value_size	= sizeof(__u64), // socket file descriptor
 };
 
 /* Echo server socket */
@@ -31,7 +31,7 @@ int echo_dispatch(struct bpf_sk_lookup *ctx)
 	const __u32 zero = 0;
 	struct bpf_sock *sk;
 	__u16 port;
-	__u8 *open;
+	__u32 *open;
 	long err;
 
 	/* Is echo service enabled on packets destination port? */
