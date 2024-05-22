@@ -81,7 +81,7 @@ func (s *Server) dupFdAndServe(pid int, fd int, handler http.Handler) {
 
 	var errChan = make(chan error)
 	go func() {
-		info("duplicated the given socket FD and listening on it")
+		info("duplicated the given socket FD and spawned a new thread with http server listening")
 		errChan <- http.Serve(ln, handler)
 	}()
 

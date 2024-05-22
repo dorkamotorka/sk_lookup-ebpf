@@ -25,8 +25,10 @@ var fd = flag.Int("fd", 0, "Target fd")
 func main() {
 	flag.Parse()
 
+	x := 0
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Response from process %d\n", os.Getpid())
+		x += 1
+		fmt.Printf("Request from process %d, x=%d\n", os.Getpid(), x)
 	})
 
 	listenAddr := ":8080"
