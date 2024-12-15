@@ -1,4 +1,10 @@
-# Test
+# eBPF sk_lookup
+
+This repository features a simple example where connections to different ports are redirected to the same listening socket.
+
+While it can be expanded to handle multiple listening sockets, the main goal is to demonstrate how we can programmatically control the logic for mapping network connections to the desired listening socket.
+
+## Test
 
 Run HTTP server, e.g. `python3 raw-examples/socket-tests/blocking-accept.py`
 
